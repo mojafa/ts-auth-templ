@@ -12,11 +12,28 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.User = void 0;
+exports.User = exports.privateFields = void 0;
 const typegoose_1 = require("@typegoose/typegoose");
 const nanoid_1 = require("nanoid");
 const argon2_1 = __importDefault(require("argon2"));
+const logger_1 = __importDefault(require("../utils/logger"));
+exports.privateFields = [
+    "password",
+    "__v",
+    "verificationCode",
+    "passwordResetCode",
+    "verified",
+];
 let User = class User {
+    async validatePassword(candidatePassword) {
+        try {
+            return await argon2_1.default.verify(this.password, candidatePassword);
+        }
+        catch (e) {
+            logger_1.default.error(e, "Could not validate password");
+            return false;
+        }
+    }
 };
 __decorate([
     (0, typegoose_1.prop)({ lowercase: true, required: true, unique: true }),
@@ -32,7 +49,7 @@ __decorate([
 ], User.prototype, "verificationCode", void 0);
 __decorate([
     (0, typegoose_1.prop)(),
-    __metadata("design:type", Object)
+    __metadata("design:type", String)
 ], User.prototype, "passwordResetCode", void 0);
 __decorate([
     (0, typegoose_1.prop)({ default: false }),
@@ -47,6 +64,7 @@ User = __decorate([
         this.password = hash;
         return;
     }),
+    (0, typegoose_1.index)({ email: 1 }),
     (0, typegoose_1.modelOptions)({
         schemaOptions: {
             timestamps: true,
